@@ -13,6 +13,10 @@ Eight targets, all cross-compiled from a single Linux runner with
 
 ## Install
 
+> No release is tagged yet — the commands below go live with `v0.1.0`.
+> Until then, build locally (see [Build](#build)) or grab the artifact from
+> the latest [build-and-test run][runs].
+
 ```sh
 x eget x-cmd-build/argon2
 ```
@@ -101,4 +105,5 @@ tags) is kept at
 [upstream]: https://github.com/p-h-c/phc-winner-argon2
 [phc]: https://www.password-hashing.net/
 [releases]: https://github.com/x-cmd-build/argon2/releases
+[runs]: https://github.com/x-cmd-build/argon2/actions/workflows/build-and-test.yml
 [pin]: https://github.com/p-h-c/phc-winner-argon2/commit/f57e61e19229e23c4445b85494dbf7c07de721cb

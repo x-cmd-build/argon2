@@ -12,6 +12,10 @@ Alpine 容器，不需要 macOS runner，不需要 MSYS2。
 
 ## 安装
 
+> 目前还没有打 tag —— 下面的命令要等 `v0.1.0` 发布后才可用。
+> 在那之前请本地构建（见 [构建](#构建)），或从最新一次
+> [build-and-test 运行][runs] 里下载 artifact。
+
 ```sh
 x eget x-cmd-build/argon2
 ```
@@ -95,4 +99,5 @@ TARGET=linux-x64-musl sh scripts/package.sh   # -> dist/argon2-linux-x64-musl.ta
 [upstream]: https://github.com/p-h-c/phc-winner-argon2
 [phc]: https://www.password-hashing.net/
 [releases]: https://github.com/x-cmd-build/argon2/releases
+[runs]: https://github.com/x-cmd-build/argon2/actions/workflows/build-and-test.yml
 [pin]: https://github.com/p-h-c/phc-winner-argon2/commit/f57e61e19229e23c4445b85494dbf7c07de721cb
