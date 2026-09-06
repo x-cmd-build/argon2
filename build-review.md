@@ -141,6 +141,18 @@ The Windows binaries have **not** been executed on Windows. The import
 table is a checkable fact; "it runs" is not, until someone runs it. That
 stays on the pre-release checklist in `code-review.md` §2.
 
+### Published release round-trip (v0.1.0)
+
+Against the published assets, not the CI artifacts:
+
+- `shasum -a 256 -c SHA256SUMS` — all 8 archives OK.
+- `x eget x-cmd-build/argon2` — matched via manifest, selected
+  `argon2-darwin-arm64.tar.xz`, verified SHA-256, installed. The installed
+  binary reproduces upstream's `m=65536,t=2,p=1` Argon2id vector exactly.
+- Every archive additionally carries a keyless cosign sigstore bundle, and
+  `SHA256SUMS` is itself signed — which is what makes the checksum file
+  worth trusting rather than merely convenient.
+
 ### Runner ground truth (`ubuntu-slim`, measured)
 
 `ubuntu-slim` is a 1-CPU unprivileged container. Its tool set was
