@@ -13,10 +13,6 @@ Eight targets, all cross-compiled from a single Linux runner with
 
 ## Install
 
-> No release is tagged yet — the commands below go live with `v0.1.0`.
-> Until then, build locally (see [Build](#build)) or grab the artifact from
-> the latest [build-and-test run][runs].
-
 ```sh
 x eget x-cmd-build/argon2
 ```

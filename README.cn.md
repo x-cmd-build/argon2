@@ -12,10 +12,6 @@ Alpine 容器，不需要 macOS runner，不需要 MSYS2。
 
 ## 安装
 
-> 目前还没有打 tag —— 下面的命令要等 `v0.1.0` 发布后才可用。
-> 在那之前请本地构建（见 [构建](#构建)），或从最新一次
-> [build-and-test 运行][runs] 里下载 artifact。
-
 ```sh
 x eget x-cmd-build/argon2
 ```
