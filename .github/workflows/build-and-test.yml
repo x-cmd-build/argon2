@@ -1,0 +1,122 @@
+name: build-and-test
+
+# Explicit dispatch only. Pushing a commit must never start a run —
+# `gh workflow run build-and-test.yml` is the way in.
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner label. ubuntu-slim is a 1-CPU container with a hard 15-minute cap; ubuntu-latest is a full VM.'
+        type: choice
+        options:
+          - ubuntu-slim
+          - ubuntu-latest
+        default: ubuntu-slim
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZIG_VERSION: 0.14.0
+
+jobs:
+  # One job for all eight targets, on purpose.
+  #
+  # Every target uses the same source, the same toolchain and the same
+  # runner — the only thing that differs is the `-target` string. An 8-way
+  # matrix would re-download zig eight times to save a few seconds of
+  # compilation. The per-target step summary below gives the same
+  # at-a-glance pass/fail readout a matrix would.
+  build:
+    name: Build all targets
+    runs-on: ${{ inputs.runner || 'ubuntu-slim' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain inventory
+        # ubuntu-slim ships a deliberately minimal tool set. Print what we
+        # actually have before anything depends on it, so a missing tool
+        # shows up as a named absence rather than a confusing failure.
+        run: |
+          echo "runner: ${{ inputs.runner || 'ubuntu-slim' }}"
+          echo "user:   $(id -un) (uid $(id -u))"
+          echo "kernel: $(uname -srm)"
+          for t in make tar xz zip python3 od tr sha256sum file qemu-aarch64-static wine; do
+            printf '%-20s %s\n' "$t" "$(command -v "$t" || echo '-- absent --')"
+          done
+
+      - name: Setup zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: ${{ env.ZIG_VERSION }}
+
+      - name: Verify source with upstream's own test suite
+        # Before trusting any cross-compiled artifact, prove that this
+        # source tree plus this toolchain produces a correct argon2 on the
+        # one platform we can actually execute. Both code paths are
+        # covered: the SSE2-optimised src/opt.c that the x86-64 targets
+        # ship, and — via OPTTEST=1 — the portable src/ref.c that every
+        # aarch64 target ships.
+        run: |
+          set -eu
+          for mode in opt ref; do
+            work=$(mktemp -d)
+            cp -R upstream/argon2/. "$work/"
+            cd "$work"
+            echo "::group::upstream test suite ($mode path)"
+            if [ "$mode" = opt ]; then
+              make test CC="zig cc -target x86_64-linux-gnu" OPTTARGET=x86_64
+            else
+              make test CC="zig cc -target x86_64-linux-gnu" OPTTEST=1
+            fi
+            echo "::endgroup::"
+            cd - >/dev/null
+            rm -rf "$work"
+          done
+
+      - name: Build, smoke and package every target
+        run: sh .github/run-matrix.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: argon2-dist
+          path: dist/*
+          if-no-files-found: error
+
+  # The x64 job compiles the aarch64 binaries but cannot run them. Rather
+  # than ship two targets that were only format-checked, take the archives
+  # it produced and execute them on a real arm64 machine. This is still an
+  # Ubuntu runner — no new toolchain enters the build, and nothing is
+  # rebuilt here.
+  verify-arm64:
+    name: Verify aarch64 binaries natively
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: argon2-dist
+          path: dist
+
+      - name: Run the shipped aarch64 binaries
+        run: |
+          set -eu
+          for target in linux-arm64-musl linux-arm64-gnu; do
+            tar -xJf "dist/argon2-$target.tar.xz" -C /tmp
+            SMOKE_NATIVE=1 \
+            BIN_DIR="/tmp/argon2-$target/bin" \
+            TARGET="$target" \
+              sh scripts/smoke.sh
+          done

@@ -1,0 +1,9 @@
+# x-cmd-build/argon2 policy: PR requires both maintainers
+*                       @ljh-zs @edwinjhlee
+
+# Release workflow and packaging changes require explicit owner review
+/.github/workflows/release.yml    @ljh-zs @edwinjhlee
+/scripts/package.sh               @ljh-zs @edwinjhlee
+
+# The vendored tree is verbatim upstream — any diff here needs owner eyes
+/upstream/                        @ljh-zs @edwinjhlee

@@ -1,0 +1,20 @@
+# build artifacts
+build/
+dist/
+
+# upstream's Makefile writes object files next to the sources. scripts/build.sh
+# builds in a scratch copy so this should never trigger, but a hand-run
+# `make` inside upstream/argon2 would otherwise dirty the tree.
+upstream/argon2/**/*.o
+upstream/argon2/argon2
+upstream/argon2/bench
+upstream/argon2/genkat
+upstream/argon2/testcase
+upstream/argon2/libargon2.*
+upstream/argon2/*.dSYM/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
