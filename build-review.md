@@ -122,6 +122,41 @@ not algorithm correctness.
 `tr` only — no `file(1)` dependency, so it works unchanged on a minimal
 container image.
 
+### Verified outside CI, for v0.1.0
+
+Run against the archives CI actually produced
+([run 34025974436](https://github.com/x-cmd-build/argon2/actions/runs/34025974436)),
+after `sha256sum -c` on all eight:
+
+| Check | Result |
+|---|---|
+| `darwin-arm64` on Apple Silicon macOS | Runs; KAT vector matches; `otool -L` shows only `/usr/lib/libSystem.B.dylib` |
+| `darwin-x64` on the same host (Rosetta) | Runs; KAT vector matches; only libSystem |
+| `linux-x64-musl` on clean `alpine:3.20` | Runs; KAT matches; `ldd` reports "not a valid dynamic program" — i.e. genuinely static |
+| `linux-x64-musl` on clean `debian:12-slim` | Runs; KAT matches — the musl-static binary is glibc-distro portable, which is the whole point |
+| `linux-x64-gnu` on clean `debian:12-slim` | Runs; KAT matches; links only `libpthread.so.0`, `libc.so.6`, loader |
+| `win-x64-mingw` import table | `KERNEL32.dll` + `api-ms-win-crt-*` (Universal CRT) only. **No `libwinpthread-1.dll`, no `msys-2.0.dll`** — nothing to bundle. |
+
+The Windows binaries have **not** been executed on Windows. The import
+table is a checkable fact; "it runs" is not, until someone runs it. That
+stays on the pre-release checklist in `code-review.md` §2.
+
+### Runner ground truth (`ubuntu-slim`, measured)
+
+`ubuntu-slim` is a 1-CPU unprivileged container. Its tool set was
+inventoried in the first run rather than assumed:
+
+- Present: `make`, `tar`, `xz`, `zip`, `python3`, `od`, `tr`,
+  `sha256sum`, `file`. Runs as uid 1001.
+- Absent: `qemu-aarch64-static`, `wine` — which is why the arm64
+  binaries are executed on `ubuntu-24.04-arm` instead of under emulation.
+
+Timing on `ubuntu-slim`: upstream test suite 55 s, eight-target
+build + smoke + package 6 m 49 s, total 8 m 17 s against the hard
+15-minute cap. Roughly 7 minutes of headroom; if upstream grows or
+targets are added, the test suite and the build loop are the two things
+to watch.
+
 ## 5. Reproducibility
 
 - Source is pinned to an upstream commit, vendored in-tree.
@@ -148,10 +183,9 @@ ADR: `x-cmd-build/mneme/adr/0001-argon2-zig-cross-compile.md`.
 
 ## 7. Known limitations
 
-1. **macOS and Windows binaries are not executed in CI** (§4). Closing
-   this would need runners the user has explicitly ruled out for this
-   repo; it would be closed instead by a manual pre-release check on real
-   hardware.
+1. **macOS and Windows binaries are not executed in CI** (§4). The macOS
+   binaries were executed on real hardware outside CI for v0.1.0; the
+   Windows binaries were not executed anywhere, only import-checked.
 2. **No BSD targets** — zig has no bundled BSD libc (§3).
 3. **`libargon2` is not shipped.** Only the CLI. Upstream's `make install`
    also installs `libargon2.a`, `libargon2.so`/`.dylib`, `argon2.h` and a

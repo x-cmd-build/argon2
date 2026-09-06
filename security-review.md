@@ -135,7 +135,8 @@ No findings in the cryptographic core. The KAT vectors in
 
 | Property | Status |
 |---|---|
-| Static linking (musl, mingw) | Yes — no loader search path to hijack |
+| Static linking (musl, mingw) | Yes — no loader search path to hijack. Verified: `ldd` on the shipped musl binary reports "not a valid dynamic program". |
+| Third-party DLL dependencies (Windows) | None. The shipped `argon2.exe` imports only `KERNEL32.dll` and the Universal CRT `api-ms-win-crt-*` set — no `libwinpthread-1.dll`, no `msys-2.0.dll`, so there is no side-loading surface and nothing to bundle. |
 | Debug info stripped | Yes — `-g0` overrides upstream's `-g`; no `.pdb` shipped |
 | Network surface | None |
 | Filesystem surface | None (reads stdin, writes stdout) |

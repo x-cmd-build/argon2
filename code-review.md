@@ -42,9 +42,12 @@ pass/fail readout a matrix would.
 
 `ubuntu-slim` is a 1-CPU container with a hard 15-minute cap and no
 privileged operations. It fits this build because nothing here needs
-docker, `sudo` or `binfmt_misc`. `build-and-test.yml` exposes a `runner`
-input so a run can be moved to `ubuntu-latest` without editing YAML if
-that ever stops being true.
+docker, `sudo` or `binfmt_misc` — confirmed by inventorying the image in
+the first run (`make`, `tar`, `xz`, `zip`, `python3`, `od`, `sha256sum`,
+`file` all present; `qemu-aarch64-static` and `wine` absent). The first
+green run took 8 m 17 s, so there is ~7 minutes of headroom.
+`build-and-test.yml` exposes a `runner` input so a run can be moved to
+`ubuntu-latest` without editing YAML if that headroom ever runs out.
 
 ## 2. Test coverage
 
@@ -80,13 +83,15 @@ risk: `build-review.md` §4.
 
 ### Manual checklist before tagging a release
 
-- [ ] `gh workflow run build-and-test.yml` is green, including `verify-arm64`
-- [ ] Step summary shows eight ✅ rows
-- [ ] Run `argon2 -h` and one KAT vector on a real macOS box (covers the
-      two `darwin-*` targets CI cannot execute)
-- [ ] Run `argon2.exe` and one KAT vector on a real Windows box (covers
-      `win-x64-mingw`; `win-arm64-mingw` if hardware is available)
-- [ ] The three review docs have a section for the new version
+- [x] `gh workflow run build-and-test.yml` is green, including `verify-arm64`
+      — [run 34025974436](https://github.com/x-cmd-build/argon2/actions/runs/34025974436)
+- [x] Step summary shows eight ✅ rows
+- [x] Run `argon2 -h` and one KAT vector on a real macOS box — done for
+      both `darwin-arm64` and `darwin-x64` (see `build-review.md` §4)
+- [ ] Run `argon2.exe` and one KAT vector on a real Windows box — **not
+      done.** The PE import table was checked (system DLLs only, nothing
+      to bundle), but the binary has not been executed on Windows.
+- [x] The three review docs have a section for the new version
 
 Items 3 and 4 exist precisely because CI cannot make those claims.
 
